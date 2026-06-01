@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  CONFIRMED
+  ISSUED
+  CANCELED
+}
+
+model Customer {
+  id            String      @id @default(cuid())
+  name          String
+  billingName   String
+  address       String
+  email         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  unitPrices    UnitPrice[]
+  billingSources BillingSource[]
+  invoices      Invoice[]
+}
+
+model UnitPrice {
+  id            String    @id @default(cuid())
+  customerId    String
+  itemName      String
+  unitPrice     Int
+  effectiveFrom String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceItems  InvoiceItem[]
+
+  @@index([customerId, itemName, effectiveFrom])
+}
+
+model BillingSource {
+  id            String    @id @default(cuid())
+  customerId    String
+  name          String
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceItems  InvoiceItem[]
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  customerId    String
+  invoiceNumber String        @unique
+  billingMonth  String
+  status        InvoiceStatus @default(DRAFT)
+  subtotal      Int           @default(0)
+  taxAmount     Int           @default(0)
+  totalAmount   Int           @default(0)
+  issuedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items         InvoiceItem[]
+
+  @@index([billingMonth])
+}
+
+model InvoiceItem {
+  id              String         @id @default(cuid())
+  invoiceId       String
+  billingSourceId String?
+  unitPriceId     String?
+  description     String
+  quantity        Int
+  unitPrice       Int
+  amount          Int
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  invoice         Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  billingSource   BillingSource?  @relation(fields: [billingSourceId], references: [id], onDelete: SetNull)
+  unitPriceRef    UnitPrice?      @relation(fields: [unitPriceId], references: [id], onDelete: SetNull)
+}
+

@@ -1,0 +1,16 @@
+﻿version: '3.9'
+services:
+  db:
+    image: postgres:16
+    container_name: joywork-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: joywork_billing
+    ports:
+      - "5432:5432"
+    volumes:
+      - joywork_pgdata:/var/lib/postgresql/data
+volumes:
+  joywork_pgdata:
