@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'CONFIRMED', 'ISSUED', 'CANCELED');
 
 -- CreateTable
-CREATE TABLE "Customer" (
+CREATE TABLE "customers" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "billingName" TEXT NOT NULL,
@@ -14,11 +14,11 @@ CREATE TABLE "Customer" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "customers_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "UnitPrice" (
+CREATE TABLE "unit_prices" (
     "id" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
     "itemName" TEXT NOT NULL,
@@ -27,11 +27,11 @@ CREATE TABLE "UnitPrice" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "UnitPrice_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "unit_prices_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "BillingSource" (
+CREATE TABLE "billing_sources" (
     "id" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -39,11 +39,11 @@ CREATE TABLE "BillingSource" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "BillingSource_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "billing_sources_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Invoice" (
+CREATE TABLE "invoices" (
     "id" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
     "invoiceNumber" TEXT NOT NULL,
@@ -56,11 +56,11 @@ CREATE TABLE "Invoice" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "InvoiceItem" (
+CREATE TABLE "invoice_items" (
     "id" TEXT NOT NULL,
     "invoiceId" TEXT NOT NULL,
     "billingSourceId" TEXT,
@@ -72,33 +72,41 @@ CREATE TABLE "InvoiceItem" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "InvoiceItem_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "invoice_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "invoice_sequences" (
+    "billingMonth" TEXT NOT NULL,
+    "currentSeq" INTEGER NOT NULL,
+
+    CONSTRAINT "invoice_sequences_pkey" PRIMARY KEY ("billingMonth")
 );
 
 -- CreateIndex
-CREATE INDEX "UnitPrice_customerId_itemName_effectiveFrom_idx" ON "UnitPrice"("customerId", "itemName", "effectiveFrom");
+CREATE INDEX "unit_prices_customerId_itemName_effectiveFrom_idx" ON "unit_prices"("customerId", "itemName", "effectiveFrom");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber");
+CREATE UNIQUE INDEX "invoices_invoiceNumber_key" ON "invoices"("invoiceNumber");
 
 -- CreateIndex
-CREATE INDEX "Invoice_billingMonth_idx" ON "Invoice"("billingMonth");
+CREATE INDEX "invoices_billingMonth_idx" ON "invoices"("billingMonth");
 
 -- AddForeignKey
-ALTER TABLE "UnitPrice" ADD CONSTRAINT "UnitPrice_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "unit_prices" ADD CONSTRAINT "unit_prices_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "BillingSource" ADD CONSTRAINT "BillingSource_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "billing_sources" ADD CONSTRAINT "billing_sources_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_billingSourceId_fkey" FOREIGN KEY ("billingSourceId") REFERENCES "BillingSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_billingSourceId_fkey" FOREIGN KEY ("billingSourceId") REFERENCES "billing_sources"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_unitPriceId_fkey" FOREIGN KEY ("unitPriceId") REFERENCES "UnitPrice"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_unitPriceId_fkey" FOREIGN KEY ("unitPriceId") REFERENCES "unit_prices"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

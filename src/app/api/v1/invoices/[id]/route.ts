@@ -12,6 +12,12 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const current = await prisma.invoice.findUnique({ where: { id } });
+  if (!current) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  if (current.status !== "DRAFT") {
+    return NextResponse.json({ message: "Only DRAFT invoices can be updated" }, { status: 409 });
+  }
+
   const body = await req.json();
   const rawItems = Array.isArray(body.items) ? body.items : [];
   const parsed = invoiceSchema.safeParse({

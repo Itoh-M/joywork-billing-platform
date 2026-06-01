@@ -25,6 +25,8 @@ model Customer {
   unitPrices    UnitPrice[]
   billingSources BillingSource[]
   invoices      Invoice[]
+
+  @@map("customers")
 }
 
 model UnitPrice {
@@ -39,6 +41,7 @@ model UnitPrice {
   invoiceItems  InvoiceItem[]
 
   @@index([customerId, itemName, effectiveFrom])
+  @@map("unit_prices")
 }
 
 model BillingSource {
@@ -50,6 +53,8 @@ model BillingSource {
   updatedAt     DateTime  @updatedAt
   customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   invoiceItems  InvoiceItem[]
+
+  @@map("billing_sources")
 }
 
 model Invoice {
@@ -68,6 +73,7 @@ model Invoice {
   items         InvoiceItem[]
 
   @@index([billingMonth])
+  @@map("invoices")
 }
 
 model InvoiceItem {
@@ -84,5 +90,14 @@ model InvoiceItem {
   invoice         Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   billingSource   BillingSource?  @relation(fields: [billingSourceId], references: [id], onDelete: SetNull)
   unitPriceRef    UnitPrice?      @relation(fields: [unitPriceId], references: [id], onDelete: SetNull)
+
+  @@map("invoice_items")
+}
+
+model InvoiceSequence {
+  billingMonth String @id
+  currentSeq   Int
+
+  @@map("invoice_sequences")
 }
 
