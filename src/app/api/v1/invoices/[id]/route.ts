@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calcItemAmount, calcTotals } from "@/lib/billing";
+import { badRequest, invoiceSchema } from "@/lib/validators";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,27 +13,34 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json();
-  const items = (body.items ?? []).map((it: any) => ({ ...it, amount: calcItemAmount(Number(it.quantity), Number(it.unitPrice)) }));
-  const subtotal = items.reduce((s: number, it: any) => s + it.amount, 0);
+  const parsed = invoiceSchema.safeParse({
+    ...body,
+    items: (body.items ?? []).map((it: any) => ({ ...it, quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
+  });
+  if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid input");
+
+  const items = parsed.data.items.map((it) => ({ ...it, amount: calcItemAmount(it.quantity, it.unitPrice) }));
+  const subtotal = items.reduce((s, it) => s + it.amount, 0);
   const { taxAmount, totalAmount } = calcTotals(subtotal);
 
-  const updated = await prisma.$transaction(async (tx: any) => {
+  const updated = await prisma.$transaction(async (tx) => {
     await tx.invoiceItem.deleteMany({ where: { invoiceId: id } });
     return tx.invoice.update({
       where: { id },
       data: {
-        customerId: body.customerId,
-        billingMonth: body.billingMonth,
+        customerId: parsed.data.customerId,
+        billingMonth: parsed.data.billingMonth,
         subtotal,
         taxAmount,
         totalAmount,
         items: {
-          create: items.map((it: any) => ({ description: it.description, quantity: Number(it.quantity), unitPrice: Number(it.unitPrice), amount: it.amount })),
+          create: items.map((it) => ({ description: it.description, quantity: it.quantity, unitPrice: it.unitPrice, amount: it.amount })),
         },
       },
       include: { items: true },
     });
   });
+
   return NextResponse.json(updated);
 }
 
@@ -41,4 +49,3 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   await prisma.invoice.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
-
