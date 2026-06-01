@@ -30,6 +30,10 @@ export const invoiceSchema = z.object({
   items: z.array(invoiceItemSchema).min(1),
 });
 
+export type CustomerInput = z.infer<typeof customerSchema>;
+export type UnitPriceInput = z.infer<typeof unitPriceSchema>;
+export type InvoiceInput = z.infer<typeof invoiceSchema>;
+
 export function badRequest(message: string) {
   return new Response(JSON.stringify({ message }), {
     status: 400,

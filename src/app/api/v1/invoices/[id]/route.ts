@@ -13,9 +13,13 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json();
+  const rawItems = Array.isArray(body.items) ? body.items : [];
   const parsed = invoiceSchema.safeParse({
     ...body,
-    items: (body.items ?? []).map((it: any) => ({ ...it, quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
+    items: rawItems.map((it: unknown) => {
+      const obj = it as Record<string, unknown>;
+      return { ...obj, quantity: Number(obj.quantity), unitPrice: Number(obj.unitPrice) };
+    }),
   });
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid input");
 

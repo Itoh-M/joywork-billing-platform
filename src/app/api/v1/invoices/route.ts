@@ -14,9 +14,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const rawItems = Array.isArray(body.items) ? body.items : [];
   const parsed = invoiceSchema.safeParse({
     ...body,
-    items: (body.items ?? []).map((it: any) => ({ ...it, quantity: Number(it.quantity), unitPrice: Number(it.unitPrice) })),
+    items: rawItems.map((it: unknown) => {
+      const obj = it as Record<string, unknown>;
+      return { ...obj, quantity: Number(obj.quantity), unitPrice: Number(obj.unitPrice) };
+    }),
   });
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid input");
 
