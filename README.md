@@ -45,6 +45,10 @@ npm run prisma:seed
 ```bash
 npm run dev
 ```
+7. テスト
+```bash
+npm run test
+```
 
 ## 画面
 - `/dashboard`
