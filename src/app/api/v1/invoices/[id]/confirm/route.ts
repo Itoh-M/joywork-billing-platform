@@ -1,14 +1,17 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const statusMap = { confirm: "CONFIRMED", issue: "ISSUED", cancel: "CANCELED" } as const;
-
-async function setStatus(id: string, key: keyof typeof statusMap) {
-  return prisma.invoice.update({ where: { id }, data: { status: statusMap[key], issuedAt: key === "issue" ? new Date() : null } });
-}
-
 export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return NextResponse.json(await setStatus(id, "confirm"));
-}
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  if (invoice.status !== "DRAFT") {
+    return NextResponse.json({ message: "Only DRAFT invoices can be confirmed" }, { status: 409 });
+  }
 
+  const updated = await prisma.invoice.update({
+    where: { id },
+    data: { status: "CONFIRMED" },
+  });
+  return NextResponse.json(updated);
+}
